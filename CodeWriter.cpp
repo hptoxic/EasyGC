@@ -1,206 +1,220 @@
 #include "stdafx.h"
 #include "CodeWriter.h"
 
+/******************************************************************************************
+*class Statement
+*******************************************************************************************/
+namespace CodeWriter {
+	void Statement::insertDesCircuit(string str)
+	{
+	}
+	void Statement::insertDesInport(string str)
+	{
+	}
+
+}
 
 /******************************************************************************************
-*class BinaryLinearEquation
+*class InitialtorStatement
 *******************************************************************************************/
 namespace CodeWriter {
 
-BinaryLinearEquation::BinaryLinearEquation() {
-	// TODO Auto-generated constructor stub
+	string InitialtorStatement:: toString()
+	{
+		string output = "subCircuits["+index+"] = new "+className+"(";
+		int size = arguments.size();
+		for(int i=0; i<size; i++)
+		{
+			output += arguments[i];
+			if(size-1 != i)
+				output += ", ";
+		}
+		output += ");\n";
+		return output;
+	}
 
+	InitialtorStatement::InitialtorStatement(string i, vector<string> a, string cn):index(i), arguments(a), className(cn)
+	{
+	}
+
+	InitialtorStatement:: ~InitialtorStatement()
+	{
+	}
+
+} /* namespace CodeWriter */
+
+/******************************************************************************************
+*class ConnectionStatement
+*******************************************************************************************/
+namespace CodeWriter {
+
+	void ConnectionStatement::insertDesCircuit(string str)
+	{
+		this->destinationCircuitId = str;
+	}
+	void ConnectionStatement::insertDesInport(string str)
+	{
+		destinationPortId = str;
+	}
 }
 
-BinaryLinearEquation::~BinaryLinearEquation() {
-	// TODO Auto-generated destructor stub
+/******************************************************************************************
+*class InterConnectionStatement
+*******************************************************************************************/
+namespace CodeWriter {
+	string InterConnectionStatement:: toString()
+	{
+		string output = SUBCIRCUITS+"[";
+		output += sourceCircuitId;
+		output += "]."+OUTPUTWIRES+"[";
+		output += sourcePortId;
+		output += "]."+CONNECTTO+"("+SUBCIRCUITS+"[";
+		output += destinationCircuitId;
+		output += "]."+INPUTWIRES+", ";
+		output += destinationPortId;
+		output += ");\n";
+		return output;
+	}
+	InterConnectionStatement:: InterConnectionStatement(string sc, string sp):sourceCircuitId(sc), sourcePortId(sp)
+	{
+	}
+
+	InterConnectionStatement:: ~InterConnectionStatement()
+	{
+	}
+}; /* namespace CodeWriter */
+
+
+
+/******************************************************************************************
+*class OutputConnectionStatement
+*******************************************************************************************/
+namespace CodeWriter {
+
+	string OutputConnectionStatement:: toString()
+	{
+		string output = OUTPUTWIRES+"[";
+		output += outputPortId;
+		output += "] = "+SUBCIRCUITS+"[";
+		output += destinationCircuitId;
+		output += "]."+OUTPUTWIRES+"[";
+		output += destinationPortId;
+		output += "];\n";
+		return output;
+	}
+	OutputConnectionStatement::OutputConnectionStatement(string op):outputPortId(op)
+	{
+	}
 }
 
-string BinaryLinearEquation::toString()
-{
-	return "";
-}
+/******************************************************************************************
+*class InputConnectionStatement
+*******************************************************************************************/
+namespace CodeWriter {
+
+	string InputConnectionStatement:: toString()
+	{
+		string output = INPUTWIRES+"[";
+		output += inputPortId;
+		output += "]."+CONNECTTO+"("+SUBCIRCUITS+"[";
+		output += destinationCircuitId;
+		output += "]."+INPUTWIRES+", ";
+		output += destinationPortId;
+		output += ");\n";
+		return output;
+	};
+	InputConnectionStatement::InputConnectionStatement(string ip):inputPortId(ip)
+	{
+	}
+
+	InputConnectionStatement::~InputConnectionStatement()
+	{
+	}
+
 } /* namespace CodeWriter */
 
 
 /******************************************************************************************
-*class BracketStatement
+*class FixedWireStatement
 *******************************************************************************************/
 namespace CodeWriter {
+	string FixedWireStatement:: toString()
+	{
+		string output = SUBCIRCUITS+"[";
+		output += inputCircuitId;
+		output += "]."+INPUTWIRES+"[";
+		output += inputPortId;
+		output += "]."+FIXWIRE+"(";
+		output += value;
+		output += ");\n";
+		return output;
+	}
 
-BracketStatement::BracketStatement() {
-	// TODO Auto-generated constructor stub
+	FixedWireStatement::FixedWireStatement(string ic, string ip, string v):inputCircuitId(ic), inputPortId(ip), value(v)
+	{
+	}
+};
 
-}
-
-BracketStatement::~BracketStatement() {
-	// TODO Auto-generated destructor stub
-}
-
-string BracketStatement::toString()
-{
-	return "";
-}
-} /* namespace CodeWriter */
-
-/******************************************************************************************
-*class Expression
-*******************************************************************************************/
-namespace CodeWriter {
-
-Expression::Expression() {
-	// TODO Auto-generated constructor stub
-
-}
-
-Expression::~Expression() {
-	// TODO Auto-generated destructor stub
-}
-/*
-string Expression::toString()
-{
-	return "";
-}
-*/
-Statement* Expression::generateStatement(CodeGenerator::CodeGenerator* cg)
-{
-	//if it is Initialtor
-	
-}
-} /* namespace CodeWriter */
 
 /******************************************************************************************
 *class ForLoopStatement
 *******************************************************************************************/
 namespace CodeWriter {
-
-ForLoopStatement::ForLoopStatement() {
-	// TODO Auto-generated constructor stub
-
-}
-
-ForLoopStatement::~ForLoopStatement() {
-	// TODO Auto-generated destructor stub
-}
-
-string ForLoopStatement:: toString(){
-	string content = "";
-	content += "for(";
-	content += assignment->toString()+"; ";
-	content += condition->toString()+"; ";
-	content += updation->toString()+")\n";
-	content += loopContent->toString();
-	return content;
-}
-
-ForLoopStatement::ForLoopStatement(BinaryLinearEquation* assignment, BinaryLinearEquation* condition,
-			BinaryLinearEquation* updation, BracketStatement* loopContent)
-{
-	this->assignment = assignment;
-	this->condition = condition;
-	this->updation = updation;
-	this->loopContent = loopContent;
-}
-} /* namespace CodeWriter */
-
-
-/******************************************************************************************
-*class FunctionEquation
-*******************************************************************************************/
-namespace CodeWriter {
-using namespace std;
-FunctionEquation::FunctionEquation() {
-	// TODO Auto-generated constructor stub
-
-}
-
-FunctionEquation::~FunctionEquation() {
-	// TODO Auto-generated destructor stub
-}
-
-FunctionEquation::FunctionEquation(Variable* caller, Variable* functionName, vector<Variable*> parameters)
-{
-	this->caller = caller;
-	this->functionName = functionName;
-	this->parameters = parameters;
-}
-
-string FunctionEquation::toString()
-{
-	string content = "";
-	if(!caller->isEmpty())
-		content += caller->toString()+".";
-	content += functionName->toString()+"(";
-	for(auto it=parameters.begin();it!=parameters.end(); it++)
+	string ForLoopStatement:: toString() 
 	{
-		content += (*it)->toString()+", ";
+		string output = "for( int ";
+		output += variable;
+		output += "=";
+		output += startIndex;
+		output += "; ";
+		output += variable;
+		output += "<";
+		output += endIndex;
+		output += "; ";
+		output += variable+"="+variable+"+"+step;
+		output +=")\n{\n";
+		for(auto it=statements.begin(); it!=statements.end(); it++)
+			output += "\t"+(*it)->toString();
+		output += "}\n";
+		return output;
 	}
-	int size = content.size();
-	content = content.substr(0, size-2)+")";
-	return content;
-}
 
-} /* namespace CodeWriter */
-/******************************************************************************************
-*class Statement
-*******************************************************************************************/
-namespace CodeWriter {
+	ForLoopStatement::~ForLoopStatement()
+	{
+		for(auto it=statements.begin(); it!=statements.end(); it++)
+			delete *it;
+	}
 
-Statement::Statement() {
-	// TODO Auto-generated constructor stub
+	void ForLoopStatement:: insert(Statement* s)
+	{
+		statements.push_back(s);
+	}
 
-}
+	ForLoopStatement::ForLoopStatement()
+	{
+		this->startIndex = "0";
+		this->endIndex = "end";
+		this->step = "1";
+		this->variable = "i";
+	}
 
-Statement::~Statement() {
-	// TODO Auto-generated destructor stub
-}
+	ForLoopStatement::ForLoopStatement(string num, string variable)
+	{
+		this->startIndex = "0";
+		this->endIndex = num;
+		this->step = "1";
+		this->variable = variable;
+	}
 
-string Statement::toString()
-{
-	return "";
-}
+	void ForLoopStatement::insertDesCircuit(string str)
+	{
+		for(auto it=statements.begin(); it!=statements.end(); it++)
+			(*it)->insertDesCircuit(str);
+	}
 
-Statement* Statement::generateStatement(CodeGenerator::CodeGenerator* cg)
-{
-	if(cg->isSingle())
-		return new Expression(cg);
-	else
-		return new ForLoopStatement(cg);
-}
-} /* namespace CodeWriter */
-
-
-/******************************************************************************************
-*class Variable
-*******************************************************************************************/
-namespace CodeWriter {
-
-Variable::Variable() {
-	// TODO Auto-generated constructor stub
-
-}
-
-Variable::~Variable() {
-	// TODO Auto-generated destructor stub
-}
-
-Variable::Variable(string content)
-{
-	this->variableContent = content;
-}
-string Variable::toString()
-{
-	return this->variableContent;
-}
-
-bool Variable::isEmpty()
-{
-	return this->variableContent.empty();
-}
-
-Variable::Variable(FunctionEquation fq)
-{
-	Variable(fq.toString());
-}
-
-} /* namespace CodeWriter */
+	void ForLoopStatement::insertDesInport(string str)
+	{
+		for(auto it=statements.begin(); it!=statements.end(); it++)
+			(*it)->insertDesInport(str);
+	}
+};

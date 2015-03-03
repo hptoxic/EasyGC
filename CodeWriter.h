@@ -13,137 +13,168 @@
 using namespace std;
 
 namespace CodeWriter {
-class BinaBinaryLinearEquation;
-class Expression;
-class Variable;
 class Statement;
-class FunctionEquation;
+class ForLoopStatement;
+class ConnectionStatement;
+class InitialtorStatement;
+class InterConnectionStatement;
+class OutputConnectionStatement;
+class InputConnectionStatement;
+class FixedWireStatement;
 }
 #include "CodeGenerator.h"
 
 /******************************************************************************************
+Variable
+*******************************************************************************************/
+namespace CodeWriter
+{
+	const string SUBCIRCUITS = "subCircuits";
+	const string CONNECTTO = "connectTo";
+	const string INPUTWIRES = "inputWires";
+	const string OUTPUTWIRES = "outputWires";
+	const string FIXWIRE = "fixWire";
+};
+/******************************************************************************************
 *class Statement
 *******************************************************************************************/
 namespace CodeWriter {
-
 class Statement {
 public:
-	Statement();
-	virtual ~Statement();
-	virtual string toString();
-	virtual Statement* generateStatement(CodeGenerator::CodeGenerator* cg);
-	//string toString();
+	//Statement();
+	//virtual ~Statement();
+	virtual string toString() = 0;
+	virtual void insertDesCircuit(string str);
+	virtual void insertDesInport(string str);
 };
 
 } /* namespace CodeWriter */
 
 /******************************************************************************************
-*class Expression
+*class ConnectionStatement
 *******************************************************************************************/
 namespace CodeWriter {
 
-class Expression: public Statement {
+class ConnectionStatement: public Statement {
 public:
-	Expression();
-	virtual ~Expression();
-	virtual string toString();
-	virtual Statement* generateStatement(CodeGenerator::CodeGenerator* cg);
+	//ConnectionStatement();
+	//virtual ~ConnectionStatement();
+	virtual string toString()=0;
+	void insertDesCircuit(string str);
+	void insertDesInport(string str);
+protected:
+	string destinationCircuitId;
+	string destinationPortId;
 };
 
 } /* namespace CodeWriter */
 
 
-/******************************************************************************************
-*class Variable
-*******************************************************************************************/
-namespace CodeWriter {
-
-class Variable: public Expression {
-public:
-	Variable();
-	Variable(string content);
-	virtual ~Variable();
-	string toString();
-	Variable(FunctionEquation fq);
-	bool isEmpty();
-private:
-	string variableContent;
-};
-}
-
-
-/******************************************************************************************
-*class BinaryLinearEquation
-*******************************************************************************************/
-namespace CodeWriter {
-class BinaryLinearEquation: public Expression {
-public:
-	BinaryLinearEquation();
-	virtual ~BinaryLinearEquation();
-	string toString();
-private:
-	Expression *leftExpression;
-	Expression *rightExpression;
-	Variable *operand;
-};
-
-} /* namespace CodeWriter */
-
-/******************************************************************************************
-*class BracketStatement
-*******************************************************************************************/
-namespace CodeWriter {
-
-class BracketStatement: public Statement {
-public:
-	BracketStatement();
-	virtual ~BracketStatement();
-	string toString();
-private:
-	vector<Statement*> statements;
-};
-
-} /* namespace CodeWriter */
 
 
 /******************************************************************************************
 *class ForLoopStatement
 *******************************************************************************************/
-
 namespace CodeWriter {
 class ForLoopStatement: public Statement {
 public:
 	ForLoopStatement();
+	ForLoopStatement(string num, string variable);
 	virtual ~ForLoopStatement();
-	ForLoopStatement(BinaryLinearEquation* assignment, BinaryLinearEquation* condition,
-			BinaryLinearEquation* updation, BracketStatement* loopContent);
+	void insert(Statement* s);
 	string toString();
+	virtual void insertDesCircuit(string str);
+	virtual void insertDesInport(string str);
 private:
-	BinaryLinearEquation* assignment;
-	BinaryLinearEquation* condition;
-	BinaryLinearEquation* updation;
-	BracketStatement* loopContent;
+	string startIndex;
+	string endIndex;
+	string step;
+	string variable;
+	vector<Statement* > statements;
+};
+
+} /* namespace CodeWriter */
+
+/******************************************************************************************
+*class FixedWireStatement
+*******************************************************************************************/
+namespace CodeWriter {
+class FixedWireStatement: public Statement {
+public:
+	FixedWireStatement(string ic, string ip, string v);
+	//virtual ~FixedWireStatement();
+	virtual string toString();
+private:
+	string inputCircuitId;
+	string inputPortId;
+	string value;
+};
+
+} /* namespace CodeWriter */
+
+/******************************************************************************************
+*class InitialtorStatement
+*******************************************************************************************/
+namespace CodeWriter {
+
+class InitialtorStatement: public Statement {
+public:
+	InitialtorStatement(string i, vector<string> a, string cn);
+	virtual ~InitialtorStatement();
+	virtual string toString();
+private:
+	string index;
+	vector<string> arguments;
+	string className;
+};
+
+} /* namespace CodeWriter */
+
+/******************************************************************************************
+*class InterConnectionStatement
+*******************************************************************************************/
+namespace CodeWriter {
+
+class InterConnectionStatement: public ConnectionStatement {
+public:
+	InterConnectionStatement(string sc, string sp);
+	virtual ~InterConnectionStatement();
+	virtual string toString();
+private:
+	string sourceCircuitId;
+	string sourcePortId;
 };
 
 } /* namespace CodeWriter */
 
 
 /******************************************************************************************
-*class FunctionEquation
+*class OutputConnectionStatement
 *******************************************************************************************/
 namespace CodeWriter {
 
-
-class FunctionEquation: public Expression {
+class OutputConnectionStatement: public ConnectionStatement {
 public:
-	FunctionEquation();
-	virtual ~FunctionEquation();
-	string toString();
-	FunctionEquation(Variable* caller, Variable* functionName, vector<Variable*> parameters);
+	OutputConnectionStatement(string op);
+	//virtual ~OutputConnectionStatement();
+	virtual string toString();
 private:
-	Variable* caller;
-	Variable* functionName;
-	vector<Variable*> parameters;
+	string outputPortId;
+};
+}
+
+/******************************************************************************************
+*class InputConnectionStatement
+*******************************************************************************************/
+namespace CodeWriter {
+
+class InputConnectionStatement: public ConnectionStatement {
+public:
+	InputConnectionStatement(string ip);
+	virtual ~InputConnectionStatement();
+	virtual string toString();
+private:
+	string inputPortId;
 };
 
 } /* namespace CodeWriter */
