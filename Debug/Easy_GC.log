@@ -1,23 +1,16 @@
-﻿生成启动时间为 2015/3/2 18:38:50。
+﻿生成启动时间为 2015/3/4 12:03:35。
      1>项目“C:\Users\Administrator.PC-20121122AUMA\Documents\Visual Studio 2012\Projects\EasyGC\Easy_GC\Easy_GC.vcxproj”在节点 2 上(Build 个目标)。
      1>InitializeBuildStatus:
-         正在对“Debug\Easy_GC.unsuccessfulbuild”执行 Touch 任务。
+         正在创建“Debug\Easy_GC.unsuccessfulbuild”，因为已指定“AlwaysCreate”。
        ClCompile:
          所有输出均为最新。
-         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\Easy_GC.pch" /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt CodeGenerator.cpp CodeWriter.cpp Easy_GC.cpp
-         CodeGenerator.cpp
-     1>c:\users\administrator.pc-20121122auma\documents\visual studio 2012\projects\easygc\easy_gc\codegenerator.cpp(184): warning C4018: “<”: 有符号/无符号不匹配
-     1>c:\users\administrator.pc-20121122auma\documents\visual studio 2012\projects\easygc\easy_gc\codegenerator.cpp(202): warning C4018: “<”: 有符号/无符号不匹配
-         正在生成代码...
-         正在编译...
-         CodeWriter.cpp
-         正在生成代码...
-         正在跳过...(未检测到相关更改)
-         Easy_GC.cpp
+         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\Easy_GC.pch" /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt JavaClass.cpp
+         JavaClass.cpp
        Link:
          C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Administrator.PC-20121122AUMA\Documents\Visual Studio 2012\Projects\EasyGC\Debug\Easy_GC.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Administrator.PC-20121122AUMA\Documents\Visual Studio 2012\Projects\EasyGC\Debug\Easy_GC.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Administrator.PC-20121122AUMA\Documents\Visual Studio 2012\Projects\EasyGC\Debug\Easy_GC.lib" /MACHINE:X86 Debug\CodeGenerator.obj
          Debug\CodeWriter.obj
          Debug\Easy_GC.obj
+         Debug\JavaClass.obj
          Debug\stdafx.obj
          Easy_GC.vcxproj -> C:\Users\Administrator.PC-20121122AUMA\Documents\Visual Studio 2012\Projects\EasyGC\Debug\Easy_GC.exe
        FinalizeBuildStatus:
@@ -27,4 +20,4 @@
 
 生成成功。
 
-已用时间 00:00:03.05
+已用时间 00:00:01.90

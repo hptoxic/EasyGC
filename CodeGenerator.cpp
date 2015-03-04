@@ -11,9 +11,17 @@ namespace CodeGenerator
 {
 void CodeGenerator:: printStatement()
 {
-	for(auto it=s.begin(); it!=s.end(); it++)
-		cout<<(*it)->toString();
+	cout<<s->toString();
 };
+
+string CodeGenerator:: toString(int n)
+{
+	return s->toString(n);
+}
+CodeGenerator::~CodeGenerator()
+{
+	delete s;
+}
 }
 /******************************************************************************************
 Range
@@ -119,7 +127,7 @@ namespace CodeGenerator
 	}
 	string SingleRange::getVariable(string variable)
 	{
-		return variable;
+		return index;
 	}
 }
 
@@ -134,7 +142,7 @@ namespace CodeGenerator
 		int index1 = str.find_first_of(':');
 		int index2 = str.find_last_of(':');
 		this->startIndex = str.substr(0, index1);
-		this->endIndex = str.substr(index2+1);
+		this->num = str.substr(index2+1);
 		this->step = str.substr(index1+1, index2-index1-1);
 		this->multiple = true;
 	}
@@ -150,7 +158,7 @@ namespace CodeGenerator
 
 	string MultipleRange::getNum()
 	{
-		return this->endIndex;
+		return this->num;
 	}
 }
 
@@ -164,8 +172,6 @@ Initialtor::Initialtor()
 }
 Initialtor::~Initialtor()
 {
-	for(auto it=s.begin(); it!=s.end(); it++)
-		delete *it;
 }
 Initialtor::Initialtor(string ci, string arg, string cn)
 {
@@ -177,15 +183,10 @@ Initialtor::Initialtor(string ci, string arg, string cn)
 //; to seperate vector, so 
 void Initialtor:: setStatement()
 {
-	vector<Range* > circuitIndexRanges = Range::getRanges(circuitIndexes);
-	vector<vector<Range* > > circuitArgumentsRanges = Range::getComboRanges(arguments);
-	if(circuitIndexRanges.size() == circuitArgumentsRanges.size())
-	{
-		for(int i=0; i<circuitIndexRanges.size(); i++)
-		{
-			s.push_back(generateStatement(circuitIndexRanges[i], circuitArgumentsRanges[i]));
-		}
-	}
+	Range* circuitIndexRange = Range::getRange(circuitIndexes);
+	vector<Range* >  circuitArgumentsRange = Range::getComboRange(arguments);
+	
+	s = generateStatement(circuitIndexRange, circuitArgumentsRange);
 };
 
 Statement* Initialtor::generateStatement(Range* cir, vector<Range* > pir)
@@ -196,15 +197,15 @@ Statement* Initialtor::generateStatement(Range* cir, vector<Range* > pir)
 	{
 		//may set forloop variable here
 		//to match the range
-		fls = new ForLoopStatement();
+		fls = new ForLoopStatement(cir->getNum(), "i");
 	}
 	vector<string> parameters;
 	for(int i=0; i<pir.size(); i++)
 		parameters.push_back(pir[i]->getVariable());
-	InitialtorStatement *is = new InitialtorStatement(cir->getVariable(), parameters, this->className);
+	InitialtorStatement *is = new InitialtorStatement(cir->getVariable("i"), parameters, this->className);
 	if(0 != fls)
 	{
-		fls->insert(is);
+		fls->insertToForLoop(is);
 		return fls;
 	}
 	else
@@ -224,49 +225,50 @@ namespace CodeGenerator
 	};
 	void FixedWire::setStatement()
 	{
+		
 		//first loop the circuitIndex
 		Range *r1 = Range::getRange(circuitIndexes);
 		ForLoopStatement *f1 = 0;
 		if(r1->isMultiple())
 			f1 = new ForLoopStatement(r1->getNum(), "i");
-		if(0 != f1)
-			s.push_back(f1);
+
 		//second loop index start
 		Range *r2 = Range::getRange(portStartIndex);
 		ForLoopStatement *f2 = 0;
 		if(r2->isMultiple())
 			f2 = new ForLoopStatement(r2->getNum(), "j");
-		if(0 != f1 && 0!= f2)
-			f1->insert(f2);
-		if(0==f1&&0!=f2)
-			s.push_back(f2);
+		
 		//third loop
 		Range *r3 = Range::getRange(portIndexes);
 		ForLoopStatement *f3 = 0;
 		if(r3->isMultiple())
 			f3 = new ForLoopStatement(r3->getNum(), "k");
-		if(0 != f2 && 0!=f3)
-			f2->insert(f3);
-		else
-		if(0 != f1 && 0 != f3)
-			f1->insert(f3);
-		if(f1==0&&f2==0&&f3!=0)
-			s.push_back(f3);
+		
 
 		Statement *fw = new FixedWireStatement(r1->getVariable(),r2->getVariable()+"+"+r3->getVariable(), value);
-		if(0 != f3)
-			f3->insert(fw);
+		
+		if(0 != f1)
+		{
+			f1->insertToForLoop(f2);
+			f1->insertToForLoop(f3);
+			f1->insertToForLoop(fw);
+			s = f1;
+		}
 		else
 		if(0 != f2)
-			f2->insert(fw);
-		else
-		if(0 != f1)
-			f1->insert(f2);
-		else
 		{
-			s.push_back(fw);
-			return;
+			f2->insertToForLoop(f3);
+			f2->insertToForLoop(fw);
+			s = f2;
 		}
+		else
+		if(0 != f3)
+		{
+			f3->insertToForLoop(fw);
+			s = f3;
+		}
+		else
+			s = fw;
 		
 	}
 }
@@ -278,16 +280,54 @@ Connection
 namespace CodeGenerator
 {
 	
-	Connection::Connection(string sp, string dp, Component* sc, Component* dc):srcPortIndex(sp), dstPortIndex(dp), sourceCircuit(sc), destinationCircuit(dc)
+	Connection::Connection(Component* sc, Component* dc):sourceCircuit(sc), destinationCircuit(dc)
 	{
 	}
 	void Connection::setStatement()
 	{
 		//may include for loop?
-		Statement *cs = sourceCircuit->getStatement(this->srcPortIndex);
+		Statement *cs = sourceCircuit->generateStatement();
 		cs->insertDesCircuit(this->destinationCircuit->getCircuitVariable());
-		cs->insertDesInport(this->destinationCircuit->getPortVariable(this->dstPortIndex));
-		s.push_back(cs);
+		cs->insertDesInport(this->destinationCircuit->getPortVariable());
+		s = cs;
+	}
+}
+/******************************************************************************************
+Component
+*******************************************************************************************/
+namespace CodeGenerator
+{
+	Component::Component(string pi):portIndex(pi)
+	{}
+
+	Statement * Component::generateStatement()
+	{
+		ForLoopStatement *fl = generateForLoopStatement();
+		Statement *ic = getStatement();
+		if(0 != fl)
+		{
+			fl->insertToForLoop(ic);
+			return fl;
+		}
+		else
+			return ic;
+	}
+
+	ForLoopStatement* Component::generateForLoopStatement()
+	{
+		ForLoopStatement *f1 = getForLoopStatement("i");
+		//second loop
+		Range *r2 = Range::getRange(this->portIndex);
+		ForLoopStatement *f2 = 0;
+		if(r2->isMultiple())
+			f2 = new ForLoopStatement(r2->getNum(), "j");
+		if(0 != f1)
+		{
+			f1->insertToForLoop(f2);
+			return f1;
+		}
+		else
+			return f2;
 	}
 }
 
@@ -297,41 +337,44 @@ SingleComponent
 namespace CodeGenerator
 {
 
-	SingleComponent::SingleComponent(string si, string ci): startIndexRange(si), circuitIndex(ci)
+	SingleComponent::SingleComponent(string ci, string si, string port): Component(port), startIndexRange(si), circuitIndex(ci)
 	{
 	}
 
 	string SingleComponent::getCircuitVariable()
 	{
+		//should be single
 		Range * r = Range::getRange(this->circuitIndex);
+		if(r->isMultiple())
+			cout<<"multiple range in single component\n";
 		return r->getVariable();
 	}
-	string SingleComponent::getPortVariable(string srcPort)
+	string SingleComponent::getPortVariable()
 	{
+		string result = "";
 		Range *r1 = Range::getRange(this->startIndexRange);
-		Range *r2 = Range::getRange(srcPort);
-		return r1->getVariable("i")+"+"+r2->getVariable("j");
-	}
-	Statement* SingleComponent::getStatement(string ip)
-	{
-		ForLoopStatement *f1 = getForLoopStatement("i");
-		//second loop
-		Range *r2 = Range::getRange(ip);
-		ForLoopStatement *f2 = 0;
-		if(r2->isMultiple())
-			f2 = new ForLoopStatement(r2->getNum(), "j");
-		InterConnectionStatement *ic = new InterConnectionStatement(getCircuitVariable(), getPortVariable(ip));
-		if(0 != f2)
-			f2->insert(ic);
-		if(0 != f1)
-			if(0 != f2)
-				f1->insert(f2);
+		if(!r1->isMultiple())
+			result += r1->getVariable();
+		else
+			result += r1->getVariable("i");
+
+		Range *r2 = Range::getRange(this->portIndex);
+		if(!r2->isMultiple())
+			if(result.empty())
+				result = r2->getVariable();
 			else
-				f1->insert(ic);
-		if(0 != f1)
-			return f1;
-		if(0 != f2)
-			return f2;
+				result += "+"+r2->getVariable();
+		else
+			if(result.empty())
+				result = r2->getVariable("j");
+			else
+				result += "+"+r2->getVariable("j");
+
+		return result;
+	}
+	Statement* SingleComponent::getStatement()
+	{
+		InterConnectionStatement *ic = new InterConnectionStatement(getCircuitVariable(), getPortVariable());
 		return ic;
 	};
 	ForLoopStatement* SingleComponent::getForLoopStatement(string variable)
@@ -351,15 +394,17 @@ namespace CodeGenerator
 	string MultipleComponent:: getCircuitVariable()
 	{
 		Range *r1 = Range::getRange(circuitIndexes);
-		return r1->getVariable();
+		if(r1->isMultiple())
+			cout<<"single range in multiple componnet\n";
+		return r1->getVariable("i");
 	}
 
-	string MultipleComponent::getPortVariable(string src)
+	string MultipleComponent::getPortVariable()
 	{
-		Range *r2 = Range::getRange(src);
-		return r2->getVariable();
+		Range *r2 = Range::getRange(this->portIndex);		
+		return r2->getVariable("j");
 	}
-	MultipleComponent::MultipleComponent(string ci):circuitIndexes(ci)
+	MultipleComponent::MultipleComponent(string ci, string port):Component(port), circuitIndexes(ci)
 	{
 	}
 	ForLoopStatement* MultipleComponent::getForLoopStatement(string variable)
@@ -371,26 +416,9 @@ namespace CodeGenerator
 		return f1;
 	}
 
-	Statement* MultipleComponent::getStatement(string ip)
+	Statement* MultipleComponent::getStatement()
 	{
-		ForLoopStatement *f1 = getForLoopStatement("i");
-		//second loop
-		Range *r2 = Range::getRange(ip);
-		ForLoopStatement *f2 = 0;
-		if(r2->isMultiple())
-			f2 = new ForLoopStatement(r2->getNum(), "j");
-		InterConnectionStatement *ic = new InterConnectionStatement(getCircuitVariable(), getPortVariable(ip));
-		if(0 != f2)
-			f2->insert(ic);
-		if(0 != f1)
-			if(0 != f2)
-				f1->insert(f2);
-			else
-				f1->insert(ic);
-		if(0 != f1)
-			return f1;
-		if(0 != f2)
-			return f2;
+		InterConnectionStatement *ic = new InterConnectionStatement(getCircuitVariable(), getPortVariable());
 		return ic;
 	};
 }
@@ -399,35 +427,12 @@ Input
 *******************************************************************************************/
 namespace CodeGenerator
 {
-	Input::Input(string ip):SingleComponent(ip, "")
+	Input::Input(string ip, string port):SingleComponent("",ip, port)
 	{
 	};
-	Statement* Input::getStatement(string ip)
+	Statement* Input::getStatement()
 	{
-		//the first loop startIndex
-		Range *r1 = Range::getRange(startIndexRange);
-		ForLoopStatement *f1 = 0;
-		if(r1->isMultiple())
-			f1 = new ForLoopStatement(r1->getNum(), "i");
-		//second loop
-		Range *r2 = Range::getRange(ip);
-		ForLoopStatement *f2 = 0;
-		if(r2->isMultiple())
-			f2 = new ForLoopStatement(r2->getNum(), "j");
-
-		Statement* ic = new InputConnectionStatement(r1->getVariable("i")+"+"+r2->getVariable("j"));
-
-		if(0 != f2)
-			f2->insert(ic);
-		if(0 != f1)
-			if(0 != f2)
-				f1->insert(f2);
-			else
-				f1->insert(ic);
-		if(0 != f1)
-			return f1;
-		if(0 != f2)
-			return f2;
+		Statement* ic = new InputConnectionStatement(getPortVariable());
 		return ic;
 	}
 
@@ -438,35 +443,12 @@ Output
 *******************************************************************************************/
 namespace CodeGenerator
 {
-	Output::Output(string ip):SingleComponent(ip, "")
+	Output::Output(string ip, string port):SingleComponent("", ip, port)
 	{
 	};
-	Statement* Output::getStatement(string ip)
+	Statement* Output::getStatement()
 	{
-		//the first loop startIndex
-		Range *r1 = Range::getRange(startIndexRange);
-		ForLoopStatement *f1 = 0;
-		if(r1->isMultiple())
-			f1 = new ForLoopStatement(r1->getNum(), "i");
-		//second loop
-		Range *r2 = Range::getRange(ip);
-		ForLoopStatement *f2 = 0;
-		if(r2->isMultiple())
-			f2 = new ForLoopStatement(r2->getNum(), "j");
-
-		Statement* ic = new OutputConnectionStatement(r1->getVariable("i")+"+"+r2->getVariable("j"));
-
-		if(0 != f2)
-			f2->insert(ic);
-		if(0 != f1)
-			if(0 != f2)
-				f1->insert(f2);
-			else
-				f1->insert(ic);
-		if(0 != f1)
-			return f1;
-		if(0 != f2)
-			return f2;
+		Statement* ic = new OutputConnectionStatement(getPortVariable());
 		return ic;
 	}
 
@@ -477,7 +459,7 @@ InputConnection
 *******************************************************************************************/
 namespace CodeGenerator
 {
-	InputConnection::InputConnection(string inputStartIndex, Component* endpoint, string sc, string rc):Connection(sc, rc, new Input(inputStartIndex), endpoint)
+	InputConnection::InputConnection(string inputStartIndex, string sc, Component* endpoint):Connection(new Input(inputStartIndex, sc), endpoint)
 	{
 	}
 	
@@ -488,8 +470,42 @@ OutputConnection
 *******************************************************************************************/
 namespace CodeGenerator
 {
-	OutputConnection::OutputConnection(string inputStartIndex, Component* endpoint, string sc, string rc):Connection(sc, rc, new Output(inputStartIndex), endpoint)
+	OutputConnection::OutputConnection(string inputStartIndex, string sc, Component* endpoint):Connection(new Output(inputStartIndex, sc), endpoint)
 	{
 	}
 }
 
+/******************************************************************************************
+GarbledClass
+*******************************************************************************************/
+namespace CodeGenerator
+{
+	GarbledClass::GarbledClass(string cn, string as, string in, string out, string component)
+		:className(cn), arguments(as), inDegree(in), outDegree(out), componentNum(component)
+	{
+	}
+	void GarbledClass::setStatement()
+	{
+		string str = "";
+		vector<string> para;
+		int length = arguments.length();
+		for(int i=0; i<=length; i++)
+		{
+			char tmp = arguments[i];
+			if(','==tmp||';'==tmp||'\0'==tmp)
+			{
+				if(!str.empty())
+					para.push_back(str);
+				str = "";
+			}
+			else
+				str.push_back(tmp);
+		}
+		s = new GarbledClassFunction(className, para, inDegree, outDegree, componentNum);
+	}
+
+	string GarbledClass::getClassName()
+	{
+		return this->className;
+	}
+}

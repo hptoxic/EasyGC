@@ -13,6 +13,7 @@ class InterConnection;
 class InputConnection;
 class OutputConnection;
 class Range;
+class GarbledClass;
 }
 #ifndef CODEGENERATOR_H_
 #define CODEGENERATOR_H_
@@ -32,9 +33,11 @@ namespace CodeGenerator
 	public:
 		virtual void setStatement() = 0;
 		virtual void printStatement();
+		virtual string toString(int n = 0);
 		friend Range* getRange(string range);
+		virtual ~CodeGenerator();
 	protected:
-		vector<Statement*> s;
+		Statement* s;
 	};
 }
 /******************************************************************************************
@@ -86,13 +89,16 @@ namespace CodeGenerator
 	class Component
 	{
 	protected:
-	
+		string portIndex;
 	public:
-		virtual Statement* getStatement(string ip) = 0;
+		Statement * generateStatement();
+		virtual Statement* getStatement() = 0;
 		virtual string getCircuitVariable() = 0;
-		virtual string getPortVariable(string srcPort) = 0;
+		virtual string getPortVariable() = 0;
+		Component(string pi);
 	private:
 		virtual ForLoopStatement* getForLoopStatement(string variable) = 0;
+		ForLoopStatement* generateForLoopStatement();
 	};
 }
 
@@ -108,10 +114,10 @@ namespace CodeGenerator
 	private:
 		string circuitIndex;
 	public:
-		virtual Statement* getStatement(string ip);
-		SingleComponent(string si, string ci);
+		virtual Statement* getStatement();
+		SingleComponent(string ci, string si, string port);
 		string getCircuitVariable();
-		string getPortVariable(string srcPort);
+		string getPortVariable();
 	private:
 		virtual ForLoopStatement* getForLoopStatement(string variable);
 	};
@@ -127,10 +133,10 @@ namespace CodeGenerator
 	private:
 		string circuitIndexes;
 	public:
-		virtual Statement* getStatement(string ip);
+		virtual Statement* getStatement();
 		string getCircuitVariable();
-		string getPortVariable(string srcPort);
-		MultipleComponent(string ci);
+		string getPortVariable();
+		MultipleComponent(string ci, string port);
 	private:
 		virtual ForLoopStatement* getForLoopStatement(string variable);
 	};
@@ -145,8 +151,8 @@ namespace CodeGenerator
 	class Input : public SingleComponent
 	{
 	public:
-		Input(string ip);
-		virtual Statement* getStatement(string ip);
+		Input(string ip, string port);
+		virtual Statement* getStatement();
 	};
 }
 /******************************************************************************************
@@ -157,8 +163,8 @@ namespace CodeGenerator
 	class Output : public SingleComponent
 	{
 	public:
-		Output(string ip);
-		virtual Statement* getStatement(string ip);
+		Output(string ip, string port);
+		virtual Statement* getStatement();
 	};
 }
 
@@ -175,12 +181,8 @@ namespace CodeGenerator
 		//multiple 2
 		Component* destinationCircuit;
 	
-		//[0:1:L]
-		string srcPortIndex;
-		//[0:1:L]
-		string dstPortIndex;
 	public:
-		Connection(string sp, string dp,Component* sc, Component* dc);
+		Connection(Component* sc, Component* dc);
 		void setStatement();
 	};
 }
@@ -193,7 +195,7 @@ namespace CodeGenerator
 	class InputConnection : public Connection
 	{
 	public:
-		InputConnection(string inputStartIndex, Component* endpoint, string sc, string rc);
+		InputConnection(string inputStartIndex, string sc, Component* endpoint);
 	
 	};
 }
@@ -206,7 +208,7 @@ namespace CodeGenerator
 	class OutputConnection : public Connection
 	{
 	public:
-		OutputConnection(string inputStartIndex, Component* endpoint, string sc, string rc);
+		OutputConnection(string inputStartIndex, string sc, Component* endpoint);
 	};
 }
 
@@ -258,13 +260,33 @@ namespace CodeGenerator
 	{
 	private:
 		string startIndex;
-		string endIndex;
 		string step;
+		string num;
 	public:
 		MultipleRange(string str);
 		string getVariable();
 		string getVariable(string str);
 		string getNum();
+	};
+}
+
+/******************************************************************************************
+GarbledClass
+*******************************************************************************************/
+namespace CodeGenerator
+{
+	class GarbledClass : public CodeGenerator
+	{
+	private:
+		string className;
+		string arguments;
+		string inDegree;
+		string outDegree;
+		string componentNum;
+	public:
+		GarbledClass(string cn, string as, string in, string out, string component);
+		virtual void setStatement();
+		string getClassName();
 	};
 }
 #endif  /*  end codegenerator.h file  */

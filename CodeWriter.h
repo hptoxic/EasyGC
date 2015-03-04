@@ -21,6 +21,7 @@ class InterConnectionStatement;
 class OutputConnectionStatement;
 class InputConnectionStatement;
 class FixedWireStatement;
+class GarbledClassFunction;
 }
 #include "CodeGenerator.h"
 
@@ -43,9 +44,10 @@ class Statement {
 public:
 	//Statement();
 	//virtual ~Statement();
-	virtual string toString() = 0;
+	virtual string toString(int n = 0) = 0;
 	virtual void insertDesCircuit(string str);
 	virtual void insertDesInport(string str);
+	virtual void insertToForLoop(Statement* s);
 };
 
 } /* namespace CodeWriter */
@@ -59,7 +61,7 @@ class ConnectionStatement: public Statement {
 public:
 	//ConnectionStatement();
 	//virtual ~ConnectionStatement();
-	virtual string toString()=0;
+	virtual string toString(int n = 0)=0;
 	void insertDesCircuit(string str);
 	void insertDesInport(string str);
 protected:
@@ -81,8 +83,8 @@ public:
 	ForLoopStatement();
 	ForLoopStatement(string num, string variable);
 	virtual ~ForLoopStatement();
-	void insert(Statement* s);
-	string toString();
+	void insertToForLoop(Statement* s);
+	string toString(int n = 0);
 	virtual void insertDesCircuit(string str);
 	virtual void insertDesInport(string str);
 private:
@@ -90,7 +92,7 @@ private:
 	string endIndex;
 	string step;
 	string variable;
-	vector<Statement* > statements;
+	Statement*  statement;
 };
 
 } /* namespace CodeWriter */
@@ -103,7 +105,7 @@ class FixedWireStatement: public Statement {
 public:
 	FixedWireStatement(string ic, string ip, string v);
 	//virtual ~FixedWireStatement();
-	virtual string toString();
+	virtual string toString(int n = 0);
 private:
 	string inputCircuitId;
 	string inputPortId;
@@ -121,7 +123,7 @@ class InitialtorStatement: public Statement {
 public:
 	InitialtorStatement(string i, vector<string> a, string cn);
 	virtual ~InitialtorStatement();
-	virtual string toString();
+	virtual string toString(int n = 0);
 private:
 	string index;
 	vector<string> arguments;
@@ -139,7 +141,7 @@ class InterConnectionStatement: public ConnectionStatement {
 public:
 	InterConnectionStatement(string sc, string sp);
 	virtual ~InterConnectionStatement();
-	virtual string toString();
+	virtual string toString(int n = 0);
 private:
 	string sourceCircuitId;
 	string sourcePortId;
@@ -157,7 +159,7 @@ class OutputConnectionStatement: public ConnectionStatement {
 public:
 	OutputConnectionStatement(string op);
 	//virtual ~OutputConnectionStatement();
-	virtual string toString();
+	virtual string toString(int n = 0);
 private:
 	string outputPortId;
 };
@@ -172,9 +174,31 @@ class InputConnectionStatement: public ConnectionStatement {
 public:
 	InputConnectionStatement(string ip);
 	virtual ~InputConnectionStatement();
-	virtual string toString();
+	virtual string toString(int n = 0);
 private:
 	string inputPortId;
+};
+
+} /* namespace CodeWriter */
+
+/******************************************************************************************
+*class GarbledClassFunction
+*******************************************************************************************/
+namespace CodeWriter {
+
+class GarbledClassFunction: public Statement {
+public:
+	virtual string toString(int n = 0);
+	GarbledClassFunction(string cn, vector<string> as, string in, string out, string component);
+private:
+	string className;
+	vector<string> arguments;
+	string indegree;
+	string outdegree;
+	string componentNum;
+private:
+	string declareVariable(int n = 0);
+	string declareConstruction(int n =0);
 };
 
 } /* namespace CodeWriter */
